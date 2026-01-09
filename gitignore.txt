@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+venv/
+env/
+.env
+*.env
+secrets.txt
+data/
+*.log
+config.json

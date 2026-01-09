@@ -6,8 +6,8 @@ from datetime import datetime
 
 # ===================== КОНСТАНТЫ =====================
 # Токен и ID админа берутся из переменных окружения
-TOKEN = os.environ.get('BOT_TOKEN')
-ADMIN_ID = int(os.environ.get('ADMIN_ID', 0))
+TOKEN ='8243905366:AAFL4SO3yVpZI9zUkiQOBfZtkdeRP4AhIoY'
+ADMIN_ID = 8598334384
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
 
 # ===================== ХРАНИЛИЩЕ =====================

@@ -4,18 +4,16 @@ import time
 import os
 from datetime import datetime
 
-# ===================== КОНСТАНТЫ =====================
-# Токен и ID админа берутся из переменных окружения
 TOKEN ='8243905366:AAFL4SO3yVpZI9zUkiQOBfZtkdeRP4AhIoY'
 ADMIN_ID = 8598334384
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
 
-# ===================== ХРАНИЛИЩЕ =====================
-users = {}  # {user_id: {step: 1, data: {...}}}
-applications = {}  # {app_id: {...}}
+
+users = {}  
+applications = {} 
 next_app_id = 1
 
-# ===================== УТИЛИТЫ =====================
+
 def send_message(chat_id, text, reply_markup=None):
     """Отправка сообщения"""
     try:
@@ -82,7 +80,6 @@ def edit_message(chat_id, message_id, text, reply_markup=None):
     except:
         pass
 
-# ===================== ОБРАБОТЧИКИ =====================
 def handle_start(user_id, username, first_name):
     """Обработка команды /start"""
     users[user_id] = {'step': 0, 'data': {}}
@@ -143,7 +140,7 @@ def process_user_message(user_id, text):
     step = users[user_id]['step']
     data = users[user_id]['data']
     
-    # Шаг 1: Ник
+  
     if step == 1:
         data['nickname'] = text
         users[user_id]['step'] = 2
@@ -156,7 +153,7 @@ def process_user_message(user_id, text):
 
 <i>Пример: @username</i>""")
     
-    # Шаг 2: Юзернейм
+   
     elif step == 2:
         username = text.strip()
         if not username.startswith('@'):
@@ -179,7 +176,6 @@ def process_user_message(user_id, text):
 🏷️ <b>Кем вы себя считаете?</b>
 Выберите категорию:""", keyboard)
     
-    # Шаг 3: Категория
     elif step == 3:
         if text not in ['Медийки', 'Высокий фейм', 'Средний фейм', 'Малый фейм']:
             send_message(user_id, "❌ Пожалуйста, выберите категорию из предложенных.")
@@ -195,8 +191,7 @@ def process_user_message(user_id, text):
 Основной проект, где вас можно найти
 
 <i>Пример: https://t.me/NOOLSHY или @NOOLSHY</i>""")
-    
-    # Шаг 4: Проект
+   
     elif step == 4:
         data['project'] = text
         users[user_id]['step'] = 5
@@ -221,7 +216,6 @@ def process_user_message(user_id, text):
 
 Выберите действие:""", keyboard)
     
-    # Шаг 5: Доп ссылки
     elif step == 5:
         if text == '➕ Добавить ссылку':
             users[user_id]['step'] = 'link_type'
@@ -230,7 +224,6 @@ def process_user_message(user_id, text):
             data['extra_links'] = []
             show_preview(user_id, data)
     
-    # Выбор типа ссылки
     elif step == 'link_type':
         if text == '✅ Готово':
             show_preview(user_id, data)
@@ -240,7 +233,6 @@ def process_user_message(user_id, text):
             
             send_message(user_id, f"🔗 <b>Введите ссылку для '{text}':</b>\n\n<i>Пример: https://example.com</i>")
     
-    # Ввод URL ссылки
     elif step == 'link_url':
         link_type = users[user_id].get('current_link_type', 'Другое')
         link_url = text
@@ -316,7 +308,6 @@ def handle_send_application(user_id, username):
     
     data = users[user_id]['data']
     
-    # Проверяем обязательные поля
     required = ['nickname', 'username', 'category', 'project']
     for field in required:
         if field not in data or not data[field]:
@@ -325,7 +316,6 @@ def handle_send_application(user_id, username):
     
     global next_app_id
     
-    # Сохраняем заявку
     applications[next_app_id] = {
         'user_id': user_id,
         'username': username,
@@ -333,7 +323,6 @@ def handle_send_application(user_id, username):
         'status': 'pending'
     }
     
-    # Отправляем подтверждение пользователю
     send_message(
         user_id,
         f"✅ <b>Заявка #{next_app_id} отправлена!</b>\n\n"
@@ -344,10 +333,8 @@ def handle_send_application(user_id, username):
     
     print(f"📨 Заявка #{next_app_id} от {user_id}")
     
-    # Отправляем админу
     send_application_to_admin(next_app_id, data, user_id, username)
     
-    # Увеличиваем счетчик и очищаем
     next_app_id += 1
     del users[user_id]
 
@@ -374,12 +361,10 @@ def send_application_to_admin(app_id, app_data, user_id, username):
 ⏰ <b>Время:</b> {datetime.now().strftime('%d.%m.%Y %H:%M')}
     """
     
-    # Проверяем что ADMIN_ID установлен
     if not ADMIN_ID:
         print("❌ ADMIN_ID не установлен! Заявка не отправлена админу.")
         return
     
-    # Создаем inline-кнопки
     buttons = [[
         {'text': '✅ Принять', 'callback_data': f'accept_{app_id}_{user_id}'},
         {'text': '❌ Отклонить', 'callback_data': f'reject_{app_id}_{user_id}'}
@@ -392,7 +377,6 @@ def handle_callback(callback_id, user_id, data, message_id, chat_id):
     """Обработка callback от админа"""
     print(f"🔘 Callback от {user_id}: {data}")
     
-    # Проверяем что это админ
     if user_id != ADMIN_ID:
         answer_callback(callback_id, "❌ Нет прав администратора")
         return
@@ -415,7 +399,6 @@ def handle_callback(callback_id, user_id, data, message_id, chat_id):
     if action == 'accept':
         applications[app_id]['status'] = 'accepted'
         
-        # Уведомляем пользователя
         send_message(
             target_user_id,
             f"🎉 <b>ВАША ЗАЯВКА #{app_id} ПРИНЯТА!</b>\n\n"
@@ -426,7 +409,6 @@ def handle_callback(callback_id, user_id, data, message_id, chat_id):
             f"По всем вопросам обращайтесь к @tgzorf"
         )
         
-        # Редактируем сообщение у админа
         edit_message(chat_id, message_id, f"✅ <b>Заявка #{app_id} принята</b>\nПользователь уведомлен.")
         
         answer_callback(callback_id, "✅ Заявка принята")
@@ -434,7 +416,6 @@ def handle_callback(callback_id, user_id, data, message_id, chat_id):
     elif action == 'reject':
         applications[app_id]['status'] = 'rejected'
         
-        # Уведомляем пользователя
         send_message(
             target_user_id,
             f"❌ <b>ВАША ЗАЯВКА #{app_id} ОТКЛОНЕНА</b>\n\n"
@@ -446,18 +427,15 @@ def handle_callback(callback_id, user_id, data, message_id, chat_id):
             f"По вопросам обращайтесь к @tgzorf"
         )
         
-        # Редактируем сообщение у админа
         edit_message(chat_id, message_id, f"❌ <b>Заявка #{app_id} отклонена</b>\nПользователь уведомлен.")
         
         answer_callback(callback_id, "❌ Заявка отклонена")
 
-# ===================== ГЛАВНЫЙ ЦИКЛ =====================
 def main():
     print("=" * 60)
     print("🤖 ЗАПУСК БОТА NoolShy Fame")
     print("=" * 60)
     
-    # Проверяем наличие токена
     if not TOKEN:
         print("❌ ОШИБКА: BOT_TOKEN не установлен!")
         print("Добавьте переменную окружения BOT_TOKEN")
@@ -471,7 +449,6 @@ def main():
     
     while True:
         try:
-            # Получаем обновления
             response = requests.get(
                 f"{BASE_URL}/getUpdates",
                 params={'offset': offset, 'timeout': 30},
@@ -493,7 +470,6 @@ def main():
             for update in updates.get('result', []):
                 offset = update['update_id'] + 1
                 
-                # Обработка callback
                 if 'callback_query' in update:
                     callback = update['callback_query']
                     callback_id = callback['id']
@@ -506,7 +482,7 @@ def main():
                     handle_callback(callback_id, user_id, data, message_id, chat_id)
                     continue
                 
-                # Обработка сообщений
+                
                 if 'message' not in update:
                     continue
                 
@@ -515,34 +491,28 @@ def main():
                 username = message['from'].get('username', '')
                 first_name = message['from'].get('first_name', '')
                 
-                # Команда /start
                 if 'text' in message and message['text'].startswith('/start'):
                     handle_start(user_id, username, first_name)
                     continue
                 
-                # Кнопка "Подать заявку"
                 if 'text' in message and message['text'] == '📝 Подать заявку':
                     handle_application_button(user_id)
                     continue
                 
-                # Кнопка "Информация"
                 if 'text' in message and message['text'] == 'ℹ️ Информация':
                     handle_info(user_id)
                     continue
                 
-                # Кнопка "Отправить заявку"
                 if 'text' in message and message['text'] == '✅ ОТПРАВИТЬ ЗАЯВКУ':
                     handle_send_application(user_id, username)
                     continue
                 
-                # Кнопка "Отменить"
                 if 'text' in message and message['text'] == '❌ Отменить':
                     if user_id in users:
                         del users[user_id]
                     send_message(user_id, "❌ Заявка отменена.")
                     continue
                 
-                # Обработка текстовых сообщений
                 if 'text' in message:
                     process_user_message(user_id, message['text'])
                     continue

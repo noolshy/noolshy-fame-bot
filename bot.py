@@ -4,26 +4,25 @@ import time
 import logging
 from datetime import datetime
 
-# Настройка логирования
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Конфигурация
 TOKEN = "8234313919:AAH4COsuFFpAu9Vew0nFO7FhKQFxBXJQVg0"
 ADMIN_ID = 287265398
 OWNER_USERNAME = "@tgzorf"
 CHANNEL_USERNAME = "@NOOLSHY"
 BASE_URL = f"https://api.telegram.org/bot{TOKEN}"
 
-# Хранилище (в памяти - для теста)
+
 users = {}
 applications = {}
 next_app_id = 1
 
-# Категории
+
 CATEGORIES = ["Медийки", "Высокий фейм", "Средний фейм", "Малый фейм"]
 
 def send_message(chat_id, text, reply_markup=None):
@@ -143,7 +142,7 @@ def process_step(user_id, text):
     step = users[user_id]['step']
     data = users[user_id]['data']
     
-    # Шаг 1: Ник
+  
     if step == 1:
         if len(text) < 2 or len(text) > 20:
             send_message(user_id, "❌ Ник должен быть от 2 до 20 символов")
@@ -154,7 +153,7 @@ def process_step(user_id, text):
         users[user_id]['data'] = data
         send_message(user_id, "<b>📝 ШАГ 2 из 5</b>\n\n👤 <b>Введите юзернейм:</b>\n<i>Пример: @username или просто username</i>")
     
-    # Шаг 2: Юзернейм
+  
     elif step == 2:
         username = text.strip()
         if not username.startswith('@'):
@@ -171,7 +170,7 @@ def process_step(user_id, text):
         
         send_message(user_id, "<b>📝 ШАГ 3 из 5</b>\n\n🏷️ <b>Выберите категорию:</b>", keyboard)
     
-    # Шаг 3: Категория
+    
     elif step == 3:
         if text not in CATEGORIES:
             send_message(user_id, "❌ Выберите категорию из предложенных")
@@ -182,7 +181,6 @@ def process_step(user_id, text):
         users[user_id]['data'] = data
         send_message(user_id, "<b>📝 ШАГ 4 из 5</b>\n\n🔗 <b>Ссылка на проект:</b>\n<i>Пример: https://t.me/NOOLSHY или @NOOLSHY</i>")
     
-    # Шаг 4: Проект
     elif step == 4:
         data['project'] = text
         users[user_id]['step'] = 5
@@ -197,7 +195,7 @@ def process_step(user_id, text):
         
         send_message(user_id, "<b>📝 ШАГ 5 из 5</b>\n\n🔗 <b>Доп. ссылки (необязательно):</b>\nНажмите '➕ Добавить ссылку' или '➡️ Пропустить'", keyboard)
     
-    # Шаг 5: Доп ссылки
+
     elif step == 5:
         if text == '➕ Добавить ссылку':
             users[user_id]['step'] = 'waiting_link'
@@ -206,7 +204,7 @@ def process_step(user_id, text):
             data['extra_links'] = []
             show_preview(user_id, data)
     
-    # Ожидание ссылки
+
     elif step == 'waiting_link':
         if 'extra_links' not in data:
             data['extra_links'] = []
@@ -224,7 +222,7 @@ def process_step(user_id, text):
         
         send_message(user_id, f"✅ <b>Ссылка добавлена!</b>\n\nДобавить ещё или завершить?", keyboard)
     
-    # Добавить еще ссылок
+
     elif step == 'add_more_links':
         if text == '➕ Добавить ещё':
             users[user_id]['step'] = 'waiting_link'
@@ -267,7 +265,7 @@ def submit_application(user_id, username):
     global next_app_id
     data = users[user_id]['data']
     
-    # Сохраняем заявку
+ 
     applications[next_app_id] = {
         'user_id': user_id,
         'username': username,
@@ -276,13 +274,11 @@ def submit_application(user_id, username):
         'time': datetime.now().strftime('%d.%m.%Y %H:%M')
     }
     
-    # Уведомляем пользователя
     send_message(user_id, f"✅ <b>Заявка #{next_app_id} отправлена!</b>\n\nАдминистратор получил вашу заявку. Ожидайте ответа 1-3 дня.")
     
-    # Отправляем админу
     send_to_admin(next_app_id, data, user_id, username)
     
-    # Очищаем
+
     del users[user_id]
     next_app_id += 1
 
@@ -369,7 +365,7 @@ def main():
     offset = 0
     
     try:
-        # Проверяем бота
+ 
         resp = requests.get(f"{BASE_URL}/getMe")
         if resp.status_code == 200:
             bot_info = resp.json()
@@ -388,7 +384,6 @@ def main():
     
     while True:
         try:
-            # Получаем обновления
             response = requests.get(
                 f"{BASE_URL}/getUpdates",
                 params={'offset': offset, 'timeout': 30},
@@ -410,7 +405,7 @@ def main():
             for update in updates.get('result', []):
                 offset = update['update_id'] + 1
                 
-                # Callback от админа
+                
                 if 'callback_query' in update:
                     callback = update['callback_query']
                     callback_id = callback['id']
@@ -423,7 +418,7 @@ def main():
                     handle_callback(callback_id, user_id, data, message_id, chat_id)
                     continue
                 
-                # Сообщения
+                
                 if 'message' not in update:
                     continue
                 
@@ -432,12 +427,11 @@ def main():
                 username = message['from'].get('username', '')
                 first_name = message['from'].get('first_name', '')
                 
-                # Команда /start
+            
                 if 'text' in message and message['text'].startswith('/start'):
                     handle_start(user_id, first_name)
                     continue
-                
-                # Кнопки
+              
                 if 'text' in message:
                     text = message['text']
                     
@@ -463,7 +457,7 @@ def main():
                         send_message(user_id, "❌ Заявка отменена")
                         continue
                     
-                    # Обработка текста
+                
                     process_step(user_id, text)
                     
         except requests.exceptions.Timeout:
